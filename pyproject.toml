@@ -7,7 +7,12 @@ authors = [
     { name = "Srinath", email = "kotasrinathreddy523@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "ipykernel>=7.4.0",
+    "jupyterlab>=4.6.6",
+    "openai>=3.57.0",
+    "python-dotenv>=1.2.4",
+]
 
 [project.scripts]
 excite3-chatbot = "excite3_chatbot:main"

@@ -6,7 +6,7 @@ The project is designed to be explored and documented in Jupyter notebooks first
 
 ## Project status
 
-**Stage:** Foundation initialized — conversation engine not yet implemented.
+**Stage:** Notebook provider calls implemented; automatic conversation loop not yet implemented.
 
 ## Goals
 
@@ -28,40 +28,37 @@ excite3-chatbot/
 ├── .gitignore
 ├── pyproject.toml
 ├── README.md
-└── uv.lock                 # generated after dependencies are added
+└── uv.lock                 # resolved dependency versions
 ```
 
 ## Getting started
 
 Requirements: Python 3.11+ and [UV](https://docs.astral.sh/uv/).
 
+The project pins Python 3.12.12 in `.python-version`; UV created the local `.venv` with that interpreter. Activate it in PowerShell with `.\.venv\Scripts\Activate.ps1`, or use `uv run` as shown below.
+
 ```powershell
-uv sync
-uv run python --version
+uv sync --locked
 uv run jupyter lab
 ```
 
 The first notebook is the canonical starting point for the prototype. Copy `.env.example` to `.env` and add the API credentials required by the selected model provider before making an API call. Never commit `.env` or API keys.
 
-## Initial conversation contract
+The notebook uses the OpenAI Python SDK for OpenAI, Gemini, and Groq. Set the corresponding API key and model variables in `.env`; model availability depends on the provider and account. The provider-selection variable in the example file is not currently used by the notebook: the function you call selects the provider. The project records its direct dependencies in `pyproject.toml` and resolved versions in `uv.lock`.
 
-The first participant is Alex. Alex should disagree with the conversation, challenge assumptions, and use a snarky tone while remaining within the model provider's safety requirements.
+Run the setup and function cells, then run the participant cells in order. They currently make live requests: Alex uses OpenAI, Blake uses Gemini, and Charlie uses Groq. Each successful call appends a `(speaker, text)` pair to the shared `conversation` list. Running the same participant cell again adds another turn; rerunning the personality cell resets the conversation. API requests may incur charges. Notebook outputs can contain conversation text and errors, so review them before sharing or committing.
 
-```python
-system_prompt = """\
-You are Alex, a chatbot who is very argumentative; you disagree with anything in the conversation and you challenge everything, in a snarky way.\
-You are in a conversation with Blake and Charlie.\
-"""
+Each provider sees the current speaker's previous turns as assistant messages and other participants' turns as user messages, preserving speaker names and order. If the conversation is empty, the notebook asks the participant to start. There is no automated turn loop yet. Provider-specific options such as `reasoning_effort` are omitted.
 
-user_prompt = f"""\
-You are Alex, in conversation with Blake and Charlie.\
-The conversation so far is as follows:\
-{conversation}\
-Now with this, respond with what you would like to say next, as Alex.\
-"""
-```
+After editing `.env`, restart the kernel and rerun the setup cells; `load_dotenv` does not overwrite already-loaded variables by default. Use a supported conversational model for each provider. In particular, Groq Prompt Guard is a classifier, not a conversational model, and can reject this message history. The model identifiers in `.env.example` are examples and may become unavailable; consult the provider's current model list. Never put credentials in notebook cells or saved outputs.
 
-`conversation` is intentionally a runtime value. The implementation should preserve speaker labels and pass the transcript in a deterministic format.
+## Participants
+
+- **Alex:** argumentative and snarky, challenging the other participants.
+- **Blake:** polite and easily persuaded, agreeing with Alex and trying to defuse conflict.
+- **Charlie:** protective of Blake and willing to challenge Alex's treatment of them.
+
+These personalities are instructions in the notebook, so actual responses depend on the models. The `src` package is a starter placeholder; the implementation currently lives in the notebook.
 
 ## Development workflow
 
@@ -72,6 +69,33 @@ Now with this, respond with what you would like to say next, as Alex.\
 5. Run the relevant checks before committing.
 
 ## Documentation log
+
+### 2026-11-20 — Project review
+
+- Documented the manual participant calls, transcript behavior, current limitations, and model-selection troubleshooting.
+- Restored the missing lockfile using UV's offline cache.
+
+### 2026-11-20 — Conversation personalities
+
+- Defined Blake as polite, easily persuaded, and inclined to agree with Alex and defuse conflict. Defined Charlie as protective of Blake and willing to challenge Alex's treatment of them.
+
+### 2026-11-20 — Locked notebook dependencies
+
+- Added OpenAI, python-dotenv, JupyterLab, and ipykernel to the UV project and installed the resolved dependencies in `.venv`.
+- Generated `uv.lock` and updated the launch instructions to use the locked environment.
+
+### 2026-11-20 — Python environment
+
+- Created `.venv` using the existing UV-managed Python 3.12.12 and pinned the interpreter version in `.python-version`.
+
+### 2026-11-20 — Notebook provider calls
+
+- Added OpenAI, Gemini, and Groq calls using the OpenAI SDK and a shared, ordered transcript.
+- Added environment loading and notebook launch instructions. The conversation loop is a future step.
+
+### 2026-11-20 — Provider configuration correction
+
+- Corrected the environment configuration to reference Groq, with `GROQ_API_KEY` and `GROQ_MODEL`. Provider integration remains to be implemented.
 
 ### 2026-11-20 — Foundation
 
