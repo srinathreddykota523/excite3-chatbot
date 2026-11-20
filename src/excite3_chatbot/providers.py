@@ -1,0 +1,55 @@
+"""OpenAI-compatible chat completions for the notebook's three providers."""
+
+import os
+from collections.abc import Sequence
+
+from openai import OpenAI
+
+Turn = tuple[str, str]
+SETTINGS = {
+    "openai": ("OPENAI_API_KEY", "OPENAI_MODEL", None),
+    "gemini": ("GEMINI_API_KEY", "GEMINI_MODEL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
+    "groq": ("GROQ_API_KEY", "GROQ_MODEL", "https://api.groq.com/openai/v1"),
+}
+
+
+def build_messages(system_prompt: str, speaker: str, conversation: Sequence[Turn]) -> list[dict[str, str]]:
+    messages = [{"role": "system", "content": system_prompt}]
+    for author, content in conversation:
+        if author == speaker:
+            messages.append({"role": "assistant", "content": content})
+        else:
+            messages.append({"role": "user", "content": f"{author}: {content}"})
+    if not conversation:
+        messages.append({"role": "user", "content": f"Start the conversation as {speaker}."})
+    return messages
+
+
+def call_model(provider: str, system_prompt: str, speaker: str, conversation: Sequence[Turn]) -> str:
+    try:
+        key_name, model_name, base_url = SETTINGS[provider]
+    except KeyError as exc:
+        raise ValueError(f"Unknown provider: {provider}") from exc
+    api_key, model = os.getenv(key_name), os.getenv(model_name)
+    if not api_key or not model:
+        raise ValueError(f"Set {key_name} and {model_name} in .env before calling {provider}.")
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    response = client.chat.completions.create(
+        model=model, messages=build_messages(system_prompt, speaker, conversation)
+    )
+    content = response.choices[0].message.content
+    if content is None:
+        raise ValueError(f"{provider} returned no text content.")
+    return content
+
+
+def call_gpt(system_prompt: str, speaker: str, conversation: Sequence[Turn]) -> str:
+    return call_model("openai", system_prompt, speaker, conversation)
+
+
+def call_gemini(system_prompt: str, speaker: str, conversation: Sequence[Turn]) -> str:
+    return call_model("gemini", system_prompt, speaker, conversation)
+
+
+def call_groq(system_prompt: str, speaker: str, conversation: Sequence[Turn]) -> str:
+    return call_model("groq", system_prompt, speaker, conversation)

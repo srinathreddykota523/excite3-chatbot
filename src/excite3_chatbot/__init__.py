@@ -1,2 +1,5 @@
-def main() -> None:
-    print("Hello from excite3-chatbot!")
+"""Multi-model conversation prototype."""
+
+from .cli import main
+
+__all__ = ["main"]

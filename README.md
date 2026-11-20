@@ -2,11 +2,11 @@
 
 An experimental multi-agent conversation project in which an LLM plays **Alex**, an intentionally argumentative and snarky participant in a conversation with Blake and Charlie.
 
-The project is designed to be explored and documented in Jupyter notebooks first, with reusable Python code introduced as the experiment stabilizes.
+The original experiment lives in a Jupyter notebook. Reusable Python modules and a command-line interface provide the same three-person conversation outside the notebook.
 
 ## Project status
 
-**Stage:** Notebook provider calls implemented; automatic conversation loop not yet implemented.
+**Stage:** Notebook prototype and Python command-line conversation implemented.
 
 ## Goals
 
@@ -23,7 +23,8 @@ excite3-chatbot/
 ├── notebooks/
 │   └── 01_conversation_prototype.ipynb
 ├── src/
-│   └── excite3_chatbot/
+│   └── excite3_chatbot/  # prompts, providers, conversation loop, CLI
+├── tests/
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
@@ -42,13 +43,21 @@ uv sync --locked
 uv run jupyter lab
 ```
 
+To run the Python version from the project root:
+
+```powershell
+uv run excite3-chatbot --rounds 2 --topic "Should AI assistants disagree with people?"
+```
+
+Each round calls Alex, Blake, and Charlie once, in that order. `--rounds` defaults to 1; `--topic` is optional. The command reads `.env` from the current working directory. Calls are live and may incur charges. If a provider fails, the command stops with an error; earlier printed turns remain visible. To check available options without calling an API, run `uv run excite3-chatbot --help`.
+
 The first notebook is the canonical starting point for the prototype. Copy `.env.example` to `.env` and add the API credentials required by the selected model provider before making an API call. Never commit `.env` or API keys.
 
 The notebook uses the OpenAI Python SDK for OpenAI, Gemini, and Groq. Set the corresponding API key and model variables in `.env`; model availability depends on the provider and account. The provider-selection variable in the example file is not currently used by the notebook: the function you call selects the provider. The project records its direct dependencies in `pyproject.toml` and resolved versions in `uv.lock`.
 
 Run the setup and function cells, then run the participant cells in order. They currently make live requests: Alex uses OpenAI, Blake uses Gemini, and Charlie uses Groq. Each successful call appends a `(speaker, text)` pair to the shared `conversation` list. Running the same participant cell again adds another turn; rerunning the personality cell resets the conversation. API requests may incur charges. Notebook outputs can contain conversation text and errors, so review them before sharing or committing.
 
-Each provider sees the current speaker's previous turns as assistant messages and other participants' turns as user messages, preserving speaker names and order. If the conversation is empty, the notebook asks the participant to start. There is no automated turn loop yet. Provider-specific options such as `reasoning_effort` are omitted.
+Each provider sees the current speaker's previous turns as assistant messages and other participants' turns as user messages, preserving speaker names and order. If the conversation is empty, the participant is asked to start. The CLI optionally seeds the transcript with a topic and automatically runs the requested rounds. Provider-specific options such as `reasoning_effort` are omitted.
 
 After editing `.env`, restart the kernel and rerun the setup cells; `load_dotenv` does not overwrite already-loaded variables by default. Use a supported conversational model for each provider. In particular, Groq Prompt Guard is a classifier, not a conversational model, and can reject this message history. The model identifiers in `.env.example` are examples and may become unavailable; consult the provider's current model list. Never put credentials in notebook cells or saved outputs.
 
@@ -58,7 +67,11 @@ After editing `.env`, restart the kernel and rerun the setup cells; `load_dotenv
 - **Blake:** polite and easily persuaded, agreeing with Alex and trying to defuse conflict.
 - **Charlie:** protective of Blake and willing to challenge Alex's treatment of them.
 
-These personalities are instructions in the notebook, so actual responses depend on the models. The `src` package is a starter placeholder; the implementation currently lives in the notebook.
+These personalities are instructions in the notebook and Python modules, so actual responses depend on the models. The notebook remains the original interactive experiment; Python modules provide a separate reusable implementation.
+
+## Testing
+
+Run `uv run python -m unittest discover -s tests -v` from the project root. The tests mock provider calls and do not use API credentials or make network requests.
 
 ## Development workflow
 
@@ -69,6 +82,11 @@ These personalities are instructions in the notebook, so actual responses depend
 5. Run the relevant checks before committing.
 
 ## Documentation log
+
+### 2026-11-20 — Python implementation
+
+- Moved the notebook's participant prompts and OpenAI-compatible provider behavior into reusable Python modules.
+- Added a command-line conversation runner with configurable rounds and an optional topic, plus offline tests for transcript construction and provider calls.
 
 ### 2026-11-20 — Project review
 
