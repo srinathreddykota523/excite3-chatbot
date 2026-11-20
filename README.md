@@ -156,4 +156,4 @@ Run `uv run python -m unittest discover -s tests -v` from the project root. The 
 
 ## License
 
-License to be decided before public distribution.
+This project is available under the [MIT License](LICENSE).
