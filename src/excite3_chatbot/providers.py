@@ -14,14 +14,20 @@ SETTINGS = {
 
 
 def build_messages(system_prompt: str, speaker: str, conversation: Sequence[Turn]) -> list[dict[str, str]]:
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = [{"role": "system", "content": system_prompt + " Keep each reply to two or three sentences, and never more than four."}]
     for author, content in conversation:
         if author == speaker:
             messages.append({"role": "assistant", "content": content})
         else:
             messages.append({"role": "user", "content": f"{author}: {content}"})
-    if not conversation:
-        messages.append({"role": "user", "content": f"Start the conversation as {speaker}."})
+    if not any(author != "Topic" for author, _ in conversation):
+        instruction = f"Start the conversation as {speaker} with a substantive opening response."
+    else:
+        instruction = f"Respond next as {speaker}."
+    if messages[-1]["role"] == "user":
+        messages[-1]["content"] += "\n\n" + instruction
+    else:
+        messages.append({"role": "user", "content": instruction})
     return messages
 
 
@@ -37,10 +43,13 @@ def call_model(provider: str, system_prompt: str, speaker: str, conversation: Se
     response = client.chat.completions.create(
         model=model, messages=build_messages(system_prompt, speaker, conversation)
     )
+    if not response.choices:
+        raise ValueError(f"{provider} returned no choices for {speaker}.")
     content = response.choices[0].message.content
-    if content is None:
-        raise ValueError(f"{provider} returned no text content.")
-    return content
+    if not content or not content.strip():
+        reason = response.choices[0].finish_reason
+        raise ValueError(f"{provider} returned an empty response for {speaker} (finish reason: {reason}).")
+    return content.strip()
 
 
 def call_gpt(system_prompt: str, speaker: str, conversation: Sequence[Turn]) -> str:

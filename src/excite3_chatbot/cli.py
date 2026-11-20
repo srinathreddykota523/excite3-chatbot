@@ -20,7 +20,7 @@ def main() -> int:
     load_dotenv(Path.cwd() / ".env")
     try:
         for speaker, reply in run_conversation(args.rounds, args.topic):
-            print(f"{speaker}: {reply}", flush=True)
+            print(f"{speaker}: {reply}", end="\n\n\n", flush=True)
     except (APIError, ValueError) as exc:
         print(f"Conversation stopped: {exc}", file=sys.stderr)
         return 1

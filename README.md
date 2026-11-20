@@ -49,6 +49,12 @@ To run the Python version from the project root:
 uv run excite3-chatbot --rounds 2 --topic "Should AI assistants disagree with people?"
 ```
 
+If Windows blocks the generated command launcher, run the same entry point as a Python module:
+
+```powershell
+uv run python -m excite3_chatbot --rounds 2 --topic "Should AI assistants disagree with people?"
+```
+
 Each round calls Alex, Blake, and Charlie once, in that order. `--rounds` defaults to 1; `--topic` is optional. The command reads `.env` from the current working directory. Calls are live and may incur charges. If a provider fails, the command stops with an error; earlier printed turns remain visible. To check available options without calling an API, run `uv run excite3-chatbot --help`.
 
 The first notebook is the canonical starting point for the prototype. Copy `.env.example` to `.env` and add the API credentials required by the selected model provider before making an API call. Never commit `.env` or API keys.
@@ -59,6 +65,8 @@ Run the setup and function cells, then run the participant cells in order. They 
 
 Each provider sees the current speaker's previous turns as assistant messages and other participants' turns as user messages, preserving speaker names and order. If the conversation is empty, the participant is asked to start. The CLI optionally seeds the transcript with a topic and automatically runs the requested rounds. Provider-specific options such as `reasoning_effort` are omitted.
 
+Alex receives an explicit instruction to start, including when the only context is a topic. All participants are instructed to reply in two or three sentences, with a maximum of four; model compliance is not guaranteed. The CLI and notebook leave two blank lines after each printed turn. If a provider returns empty or whitespace-only text, execution stops with an error rather than recording a blank message. An empty-response error includes the provider's finish reason to aid diagnosis.
+
 After editing `.env`, restart the kernel and rerun the setup cells; `load_dotenv` does not overwrite already-loaded variables by default. Use a supported conversational model for each provider. In particular, Groq Prompt Guard is a classifier, not a conversational model, and can reject this message history. The model identifiers in `.env.example` are examples and may become unavailable; consult the provider's current model list. Never put credentials in notebook cells or saved outputs.
 
 ## Participants
@@ -68,6 +76,19 @@ After editing `.env`, restart the kernel and rerun the setup cells; `load_dotenv
 - **Charlie:** protective of Blake and willing to challenge Alex's treatment of them.
 
 These personalities are instructions in the notebook and Python modules, so actual responses depend on the models. The notebook remains the original interactive experiment; Python modules provide a separate reusable implementation.
+
+## Make the conversation your own
+
+This is a small playground for experimenting with how personalities and models interact. You can change the system prompts, run a conversation, and see how the group dynamic changes.
+
+- **Rewrite a personality.** For the Python runner, edit `ALEX_SYSTEM`, `BLAKE_SYSTEM`, or `CHARLIE_SYSTEM` in `src/excite3_chatbot/prompts.py`. In the notebook, edit `alex_system`, `blake_system`, or `charlie_system` in the participant cell and rerun it. These are separate implementations, so make changes in both places if you use both.
+- **Try a different dynamic.** Make Alex curious instead of argumentative, give Blake a firm opinion, or have Charlie act as a mediator. Give each character a different goal and see whether the conversation changes.
+- **Change the topic or length.** Try `--topic "Should meetings be optional?"` and vary `--rounds`. A round contains one turn from each participant. Omit the topic to let Alex open the conversation.
+- **Compare conversational models.** Choose supported model identifiers in `.env`. The Python runner's speaker-to-provider mapping and order are in `src/excite3_chatbot/conversation.py`; the notebook chooses providers in its participant cells. Restart the notebook kernel after changing `.env`.
+- **Experiment interactively.** Run the notebook cells one at a time and inspect or edit the `conversation` list between turns. Rerunning the participant setup cell resets that list.
+- **Adjust reply length.** The two-to-three-sentence instruction is added in `build_messages` in `src/excite3_chatbot/providers.py` and separately in the notebook's matching function. Change both if you want consistent behavior; models may not always follow the requested length.
+
+Start with one or two rounds while experimenting: each participant turn sends a separate request, and model usage may be billed. Check the provider's current model list when choosing models, since identifiers in the example configuration can age out.
 
 ## Testing
 
@@ -82,6 +103,15 @@ Run `uv run python -m unittest discover -s tests -v` from the project root. The 
 5. Run the relevant checks before committing.
 
 ## Documentation log
+
+### 2026-11-20 — Experiment guide
+
+- Added ideas for changing personalities, topics, models, conversation order, and reply length, plus the Python module command for systems that block the generated launcher.
+
+### 2026-11-20 — Conversation readability
+
+- Added an explicit opening request, concise-response instructions, and spacing between displayed turns in both implementations.
+- Reject empty provider responses and report the finish reason; extended offline tests for message construction and presentation.
 
 ### 2026-11-20 — Python implementation
 
